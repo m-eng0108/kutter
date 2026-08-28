@@ -98,6 +98,12 @@ export default function RamenApp() {
   const [memo, setMemo] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
+  // 🌟 ここで9月1日からの経過日数を自動計算！
+  const startDate = new Date('2026-09-01');
+  const today = new Date();
+  const diffTime = today.getTime() - startDate.getTime();
+  const diffDays = Math.max(1, Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1);
+
   const genres = ['すべて', '醤油', '塩', '味噌', '豚骨', 'その他'];
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -325,11 +331,11 @@ export default function RamenApp() {
               </div>
               <div className="grid grid-cols-3 gap-2 pt-2 text-center">
                 <div>
-                  <p className="text-[10px] text-blue-100 font-bold">　　総杯数</p>
+                  <p className="text-[10px] text-blue-100 font-bold">  総杯数</p>
                   <p className="text-xl font-black">🍜243<span className="text-xs font-normal">杯</span></p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-blue-100 font-bold">　　訪問店舗</p>
+                  <p className="text-[10px] text-blue-100 font-bold">  訪問店舗</p>
                   <p className="text-xl font-black">📍87<span className="text-xs font-normal">店</span></p>
                 </div>
                 <div>
@@ -426,7 +432,8 @@ export default function RamenApp() {
                     <span className="text-2xl font-black text-gray-900">243</span>
                     <span className="text-xs text-gray-600">杯</span>
                   </div>
-                  <p className="text-[10px] text-blue-500 font-medium">記録をはじめて 128日</p>
+                  {/* 🌟 自動計算された日数をここにスッキリ配置！ */}
+                  <p className="text-[10px] text-blue-500 font-medium mt-0.5">記録をはじめて {diffDays}日</p>
                 </div>
               </div>
               <div className="h-10 w-[1px] bg-gray-100 flex-shrink-0" />
