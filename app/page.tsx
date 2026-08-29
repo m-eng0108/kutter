@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Search, Filter, Plus, ChevronRight, X, Star, CheckCircle2, 
   Image as ImageIcon, MapPin, Calendar, Trash2, Edit3, ChevronLeft, 
@@ -80,7 +80,21 @@ const INITIAL_DATA: Ramen[] = [
 ];
 
 export default function RamenApp() {
-  const [ramenList, setRamenList] = useState<Ramen[]>(INITIAL_DATA);
+  // 🌟 LocalStorageからデータを読み込む（なければINITIAL_DATA）
+  const [ramenList, setRamenList] = useState<Ramen[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('kutter_ramenList');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+    return INITIAL_DATA;
+  });
+
   const [currentTab, setCurrentTab] = useState<'home' | 'list' | 'stats'>('home');
   const [selectedGenre, setSelectedGenre] = useState('すべて');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -98,7 +112,12 @@ export default function RamenApp() {
   const [memo, setMemo] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  // 🌟 ここで9月1日からの経過日数を自動計算！
+  // 🌟 ramenListが変更されるたびに自動でLocalStorageに保存する
+  useEffect(() => {
+    localStorage.setItem('kutter_ramenList', JSON.stringify(ramenList));
+  }, [ramenList]);
+
+  // 9月1日からの経過日数を自動計算
   const startDate = new Date('2026-09-01');
   const today = new Date();
   const diffTime = today.getTime() - startDate.getTime();
@@ -332,15 +351,15 @@ export default function RamenApp() {
               <div className="grid grid-cols-3 gap-2 pt-2 text-center">
                 <div>
                   <p className="text-[10px] text-blue-100 font-bold">  総杯数</p>
-                  <p className="text-xl font-black">🍜243<span className="text-xs font-normal">杯</span></p>
+                  <p className="text-xl font-black">🍜{ramenList.length}<span className="text-xs font-normal">杯</span></p>
                 </div>
                 <div>
                   <p className="text-[10px] text-blue-100 font-bold">  訪問店舗</p>
-                  <p className="text-xl font-black">📍87<span className="text-xs font-normal">店</span></p>
+                  <p className="text-xl font-black">📍{new Set(ramenList.map(r => r.shopName)).size}<span className="text-xs font-normal">店</span></p>
                 </div>
                 <div>
                   <p className="text-[10px] text-blue-100 font-bold">総支出</p>
-                  <p className="text-base font-black pt-1">¥127,650</p>
+                  <p className="text-base font-black pt-1">¥{ramenList.reduce((sum, r) => sum + r.price, 0).toLocaleString()}</p>
                 </div>
               </div>
             </div>
@@ -356,7 +375,7 @@ export default function RamenApp() {
               
               <div className="space-y-2 pt-2">
                 {[
-                  { month: '5月 (今月)', count: 18, max: 25 },
+                  { month: '5月 (今月)', count: ramenList.length, max: 25 },
                   { month: '4月', count: 14, max: 25 },
                   { month: '3月', count: 21, max: 25 },
                   { month: '2月', count: 16, max: 25 },
@@ -370,7 +389,7 @@ export default function RamenApp() {
                     <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
                       <div 
                         className="bg-blue-600 h-full rounded-full transition-all duration-500" 
-                        style={{ width: `${(item.count / item.max) * 100}%` }}
+                        style={{ width: `${Math.min(100, (item.count / item.max) * 100)}%` }}
                       />
                     </div>
                   </div>
@@ -385,11 +404,11 @@ export default function RamenApp() {
               </h3>
               <div className="space-y-2.5 text-xs">
                 {[
-                  { name: '醤油', count: 86, color: 'bg-blue-500', percent: '35%' },
-                  { name: '塩', count: 42, color: 'bg-teal-500', percent: '17%' },
-                  { name: '豚骨', count: 41, color: 'bg-amber-500', percent: '17%' },
-                  { name: '味噌', count: 38, color: 'bg-orange-500', percent: '16%' },
-                  { name: 'その他', count: 36, color: 'bg-purple-500', percent: '15%' },
+                  { name: '醤油', count: ramenList.filter(r => r.genre === '醤油').length, color: 'bg-blue-500' },
+                  { name: '塩', count: ramenList.filter(r => r.genre === '塩').length, color: 'bg-teal-500' },
+                  { name: '豚骨', count: ramenList.filter(r => r.genre === '豚骨').length, color: 'bg-amber-500' },
+                  { name: '味噌', count: ramenList.filter(r => r.genre === '味噌').length, color: 'bg-orange-500' },
+                  { name: 'その他', count: ramenList.filter(r => r.genre === 'その他').length, color: 'bg-purple-500' },
                 ].map((g, i) => (
                   <div key={i} className="flex items-center justify-between border-b pb-2 last:border-none last:pb-0">
                     <div className="flex items-center gap-2">
@@ -397,7 +416,6 @@ export default function RamenApp() {
                       <span className="font-bold text-gray-700">{g.name}</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-gray-500 font-medium">{g.percent}</span>
                       <span className="font-black text-gray-900 w-10 text-right">{g.count}杯</span>
                     </div>
                   </div>
@@ -429,10 +447,9 @@ export default function RamenApp() {
                 <div>
                   <p className="text-[11px] text-gray-400 font-bold">累計ラーメン数</p>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-2xl font-black text-gray-900">243</span>
+                    <span className="text-2xl font-black text-gray-900">{ramenList.length}</span>
                     <span className="text-xs text-gray-600">杯</span>
                   </div>
-                  {/* 🌟 自動計算された日数をここにスッキリ配置！ */}
                   <p className="text-[10px] text-blue-500 font-medium mt-0.5">記録をはじめて {diffDays}日</p>
                 </div>
               </div>
@@ -440,7 +457,7 @@ export default function RamenApp() {
               <div className="text-right">
                 <p className="text-[11px] text-gray-400 font-bold">今月のラーメン数</p>
                 <div className="flex items-baseline justify-end gap-1">
-                  <span className="text-xl font-black text-gray-900">18</span>
+                  <span className="text-xl font-black text-gray-900">{ramenList.length}</span>
                   <span className="text-xs text-gray-600">杯</span>
                 </div>
                 <p className="text-[10px] text-gray-400">先月: 14杯</p>
@@ -452,13 +469,16 @@ export default function RamenApp() {
               <div className="bg-white p-3.5 rounded-2xl text-center border shadow-sm">
                 <div className="w-8 h-8 mx-auto bg-amber-50 rounded-full flex items-center justify-center text-amber-500 mb-1">★</div>
                 <p className="text-[10px] text-gray-400 font-bold">平均評価</p>
-                <p className="text-base font-black text-gray-800">4.2<span className="text-[10px] text-amber-500">★</span></p>
+                <p className="text-base font-black text-gray-800">
+                  {ramenList.length > 0 ? (ramenList.reduce((sum, r) => sum + r.rating, 0) / ramenList.length).toFixed(1) : '0.0'}
+                  <span className="text-[10px] text-amber-500">★</span>
+                </p>
                 <p className="text-[9px] text-gray-400">(5段階)</p>
               </div>
               <div className="bg-white p-3.5 rounded-2xl text-center border shadow-sm">
                 <div className="w-8 h-8 mx-auto bg-red-50 rounded-full flex items-center justify-center text-red-500 mb-1"><JapaneseYen className="w-4 h-4" /></div>
                 <p className="text-[10px] text-gray-400 font-bold">使った金額</p>
-                <p className="text-sm font-black text-gray-800">¥127,650</p>
+                <p className="text-sm font-black text-gray-800">¥{ramenList.reduce((sum, r) => sum + r.price, 0).toLocaleString()}</p>
                 <p className="text-[9px] text-gray-400">累計</p>
               </div>
             </div>
@@ -516,27 +536,27 @@ export default function RamenApp() {
                 <div>
                   <div className="text-lg">🍜</div>
                   <p className="text-[10px] font-bold text-gray-600 mt-1">醤油</p>
-                  <p className="text-xs font-black text-gray-900">86<span className="text-[9px]">杯</span></p>
+                  <p className="text-xs font-black text-gray-900">{ramenList.filter(r => r.genre === '醤油').length}<span className="text-[9px]">杯</span></p>
                 </div>
                 <div>
                   <div className="text-lg">🥣</div>
                   <p className="text-[10px] font-bold text-gray-600 mt-1">塩</p>
-                  <p className="text-xs font-black text-gray-900">42<span className="text-[9px]">杯</span></p>
+                  <p className="text-xs font-black text-gray-900">{ramenList.filter(r => r.genre === '塩').length}<span className="text-[9px]">杯</span></p>
                 </div>
                 <div>
                   <div className="text-lg">🍜</div>
                   <p className="text-[10px] font-bold text-gray-600 mt-1">味噌</p>
-                  <p className="text-xs font-black text-gray-900">38<span className="text-[9px]">杯</span></p>
+                  <p className="text-xs font-black text-gray-900">{ramenList.filter(r => r.genre === '味噌').length}<span className="text-[9px]">杯</span></p>
                 </div>
                 <div>
                   <div className="text-lg">🍜</div>
                   <p className="text-[10px] font-bold text-gray-600 mt-1">豚骨</p>
-                  <p className="text-xs font-black text-gray-900">41<span className="text-[9px]">杯</span></p>
+                  <p className="text-xs font-black text-gray-900">{ramenList.filter(r => r.genre === '豚骨').length}<span className="text-[9px]">杯</span></p>
                 </div>
                 <div>
                   <div className="text-lg">•••</div>
                   <p className="text-[10px] font-bold text-gray-600 mt-1">その他</p>
-                  <p className="text-xs font-black text-gray-900">14<span className="text-[9px]">杯</span></p>
+                  <p className="text-xs font-black text-gray-900">{ramenList.filter(r => r.genre === 'その他').length}<span className="text-[9px]">杯</span></p>
                 </div>
               </div>
             </div>
