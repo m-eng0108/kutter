@@ -80,7 +80,6 @@ const INITIAL_DATA: Ramen[] = [
 ];
 
 export default function RamenApp() {
-  // 🌟 LocalStorageからデータを読み込む（なければINITIAL_DATA）
   const [ramenList, setRamenList] = useState<Ramen[]>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('kutter_ramenList');
@@ -112,12 +111,10 @@ export default function RamenApp() {
   const [memo, setMemo] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  // 🌟 ramenListが変更されるたびに自動でLocalStorageに保存する
   useEffect(() => {
     localStorage.setItem('kutter_ramenList', JSON.stringify(ramenList));
   }, [ramenList]);
 
-  // 9月1日からの経過日数を自動計算
   const startDate = new Date('2026-09-01');
   const today = new Date();
   const diffTime = today.getTime() - startDate.getTime();
@@ -125,12 +122,41 @@ export default function RamenApp() {
 
   const genres = ['すべて', '醤油', '塩', '味噌', '豚骨', 'その他'];
 
+  // 画像自動圧縮・リサイズ処理
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
+      reader.onloadend = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          setImagePreview(compressedDataUrl);
+        };
       };
       reader.readAsDataURL(file);
     }
@@ -342,7 +368,6 @@ export default function RamenApp() {
 
           <div className="p-4 space-y-4 w-full box-border">
             
-            {/* メイン概要カード */}
             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-5 text-white shadow-md space-y-3 w-full box-border">
               <div className="flex justify-between items-center">
                 <span className="text-xs bg-white/20 px-2.5 py-1 rounded-full font-medium">通算記録サマリー</span>
@@ -350,11 +375,11 @@ export default function RamenApp() {
               </div>
               <div className="grid grid-cols-3 gap-2 pt-2 text-center">
                 <div>
-                  <p className="text-[10px] text-blue-100 font-bold">  総杯数</p>
+                  <p className="text-[10px] text-blue-100 font-bold">総杯数</p>
                   <p className="text-xl font-black">🍜{ramenList.length}<span className="text-xs font-normal">杯</span></p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-blue-100 font-bold">  訪問店舗</p>
+                  <p className="text-[10px] text-blue-100 font-bold">訪問店舗</p>
                   <p className="text-xl font-black">📍{new Set(ramenList.map(r => r.shopName)).size}<span className="text-xs font-normal">店</span></p>
                 </div>
                 <div>
@@ -364,7 +389,6 @@ export default function RamenApp() {
               </div>
             </div>
 
-            {/* 月別推移グラフ風セクション */}
             <div className="bg-white rounded-2xl p-4 border shadow-sm space-y-3 w-full box-border">
               <div className="flex justify-between items-center">
                 <h3 className="font-bold text-sm text-gray-800 flex items-center gap-1.5">
@@ -397,7 +421,6 @@ export default function RamenApp() {
               </div>
             </div>
 
-            {/* ジャンル別割合詳細 */}
             <div className="bg-white rounded-2xl p-4 border shadow-sm space-y-3 w-full box-border">
               <h3 className="font-bold text-sm text-gray-800 flex items-center gap-1.5">
                 <Award className="w-4 h-4 text-amber-500" /> ジャンル別比率
@@ -429,7 +452,6 @@ export default function RamenApp() {
       ) : (
         /* 3. 新ホーム画面 */
         <div className="pb-16 w-full box-border">
-          {/* ヘッダー */}
           <header className="bg-[#007AFF] text-white px-4 pt-10 pb-4 shadow-md flex items-center justify-between w-full box-border">
             <button className="p-1"><Menu className="w-6 h-6" /></button>
             <img src="/logo.png" alt="Kutter Logo" className="h-10 object-contain" />
@@ -438,7 +460,7 @@ export default function RamenApp() {
 
           <div className="px-4 mt-4 space-y-4 w-full box-border">
             
-            {/* 統計カード上段 */}
+            {/* 統計カード上段（文字サイズ・配置統一） */}
             <div className="bg-white rounded-2xl p-4 shadow-sm border flex justify-between items-center w-full box-border">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0">
@@ -457,10 +479,10 @@ export default function RamenApp() {
               <div className="text-right">
                 <p className="text-[11px] text-gray-400 font-bold">今月のラーメン数</p>
                 <div className="flex items-baseline justify-end gap-1">
-                  <span className="text-xl font-black text-gray-900">{ramenList.length}</span>
+                  <span className="text-2xl font-black text-gray-900">{ramenList.length}</span>
                   <span className="text-xs text-gray-600">杯</span>
                 </div>
-                <p className="text-[10px] text-gray-400">先月: 14杯</p>
+                <p className="text-[10px] text-gray-400 mt-0.5">先月: 14杯</p>
               </div>
             </div>
 
