@@ -460,7 +460,7 @@ export default function RamenApp() {
 
           <div className="px-4 mt-4 space-y-4 w-full box-border">
             
-            {/* 統計カード上段（文字サイズ・配置統一） */}
+            {/* 統計カード上段 */}
             <div className="bg-white rounded-2xl p-4 shadow-sm border flex justify-between items-center w-full box-border">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0">
@@ -476,13 +476,18 @@ export default function RamenApp() {
                 </div>
               </div>
               <div className="h-10 w-[1px] bg-gray-100 flex-shrink-0" />
-              <div className="text-right">
-                <p className="text-[11px] text-gray-400 font-bold">今月のラーメン数</p>
-                <div className="flex items-baseline justify-end gap-1">
-                  <span className="text-2xl font-black text-gray-900">{ramenList.length}</span>
-                  <span className="text-xs text-gray-600">杯</span>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0">
+                  🍜
                 </div>
-                <p className="text-[10px] text-gray-400 mt-0.5">先月: 14杯</p>
+                <div className="text-right">
+                  <p className="text-[11px] text-gray-400 font-bold">今月のラーメン数</p>
+                  <div className="flex items-baseline justify-end gap-1">
+                    <span className="text-2xl font-black text-gray-900">{ramenList.length}</span>
+                    <span className="text-xs text-gray-600">杯</span>
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-0.5">先月: 14杯</p>
+                </div>
               </div>
             </div>
 
