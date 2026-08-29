@@ -698,7 +698,7 @@ export default function RamenApp() {
         </div>
       )}
 
-      {/* 完了モーダル */}
+{/* 完了モーダル */}
       {isSuccessModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-40 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-sm rounded-2xl p-6 text-center space-y-4 shadow-xl box-border">
@@ -707,13 +707,9 @@ export default function RamenApp() {
               <h3 className="text-lg font-bold text-gray-800">記録が完了しました！🍜</h3>
               <p className="text-xs text-gray-500">新しいラーメンの記録がクラウドに追加されました。</p>
             </div>
-            <button onClick={() => setIsSuccessModalOpen(false)} className="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl shadow text-sm">
+            <button onClick={() => { setIsSuccessModalOpen(false); fetchRamens(); }} className="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl shadow text-sm">
               OK
             </button>
           </div>
         </div>
       )}
-
-    </div>
-  );
-}
