@@ -4,9 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { 
   Search, Filter, Plus, ChevronRight, X, Star, CheckCircle2, 
-  Image as ImageIcon, MapPin, Calendar, Trash2, Edit3, ChevronLeft, 
+  Image as ImageIcon, MapPin, Calendar, Trash2, 
   Store, Utensils, JapaneseYen, MessageSquare, Heart, 
-  Menu, Bell, Home, BarChart2, Bookmark, Map, TrendingUp, Award
+  Menu, Bell, Home, BarChart2, TrendingUp, Award
 } from 'lucide-react';
 
 interface Ramen {
@@ -57,7 +57,6 @@ export default function RamenApp() {
       if (error) {
         console.error('データ取得エラー:', error);
       } else if (data) {
-        // SupabaseのDBカラム名(スネークケース)をアプリの型(キャメルケース)に変換
         const formatted: Ramen[] = data.map((item: any) => ({
           id: item.id,
           shopName: item.shop_name,
@@ -85,11 +84,6 @@ export default function RamenApp() {
   useEffect(() => {
     fetchRamens();
   }, []);
-
-  const startDate = new Date('2026-09-01');
-  const today = new Date();
-  const diffTime = today.getTime() - startDate.getTime();
-  const diffDays = Math.max(1, Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1);
 
   const genres = ['すべて', '醤油', '塩', '味噌', '豚骨', 'その他'];
 
@@ -133,10 +127,13 @@ export default function RamenApp() {
     }
   };
 
-// ラーメン追加処理（Supabaseへ保存）
+  // ラーメン追加処理（Supabaseへ保存）
   const handleAddRamen = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!shopName || !ramenName) return;
+
+    const d = new Date();
+    const formattedDate = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
 
     const newDbData = {
       id: Date.now().toString(),
@@ -147,7 +144,7 @@ export default function RamenApp() {
       genre: genre,
       address: address || '東京都新宿区',
       access_note: '駅チカ',
-      date: new Date().toLocaleDateString('ja-JP').replace(/\//g, '/'),
+      date: formattedDate,
       visit_count: 1,
       memo: memo || '感想なし',
       want_again: true,
@@ -166,8 +163,6 @@ export default function RamenApp() {
 
       console.log('保存成功！', data);
 
-      // 成功したら一覧を再取得
-      await fetchRamens();
       setIsModalOpen(false);
       setIsSuccessModalOpen(true);
       
@@ -209,12 +204,6 @@ export default function RamenApp() {
       .update({ want_again: updated.wantAgain })
       .eq('id', updated.id);
   };
-
-  if (loading) {
-    <div className="flex items-center justify-center min-h-screen">
-      <p className="text-gray-500 font-bold">読み込み中...</p>
-    </div>
-  }
 
   return (
     <div className="w-full max-w-md mx-auto bg-gray-50 min-h-screen pb-24 relative font-sans text-gray-800 shadow-xl overflow-x-hidden box-border">
@@ -464,7 +453,6 @@ export default function RamenApp() {
 
           <div className="px-4 mt-4 space-y-4 w-full box-border">
             
-            {/* 統計カード上段 */}
             <div className="bg-white rounded-2xl p-4 shadow-sm border flex justify-between items-center w-full box-border">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0">
@@ -476,7 +464,7 @@ export default function RamenApp() {
                     <span className="text-2xl font-black text-gray-900">{ramenList.length}</span>
                     <span className="text-xs text-gray-600">杯</span>
                   </div>
-                  <p className="text-[10px] text-blue-500 font-medium mt-0.5">記録をはじめて {diffDays}日</p>
+                  <p className="text-[10px] text-blue-500 font-medium mt-0.5">記録をはじめて 1日</p>
                 </div>
               </div>
               <div className="h-10 w-[1px] bg-gray-100 flex-shrink-0" />
@@ -495,7 +483,6 @@ export default function RamenApp() {
               </div>
             </div>
 
-            {/* サマリー指標（2つ並び） */}
             <div className="grid grid-cols-2 gap-3 w-full">
               <div className="bg-white p-3.5 rounded-2xl text-center border shadow-sm">
                 <div className="w-8 h-8 mx-auto bg-amber-50 rounded-full flex items-center justify-center text-amber-500 mb-1">★</div>
@@ -514,7 +501,6 @@ export default function RamenApp() {
               </div>
             </div>
 
-            {/* 大きな記録ボタン */}
             <button
               onClick={() => setIsModalOpen(true)}
               className="w-full bg-[#007AFF] text-white py-4 rounded-2xl font-bold shadow-lg flex items-center justify-center gap-2 text-base active:scale-[0.98] transition-all box-border"
@@ -523,7 +509,6 @@ export default function RamenApp() {
               <span>食べたラーメンを記録する！</span>
             </button>
 
-            {/* 最近食べたラーメンセクション */}
             <div className="space-y-2 w-full">
               <div className="flex justify-between items-center px-1">
                 <h3 className="font-bold text-sm text-gray-800">最近食べたラーメン</h3>
@@ -555,7 +540,6 @@ export default function RamenApp() {
               </div>
             </div>
 
-            {/* ジャンル別の食べた数 */}
             <div className="bg-white rounded-2xl p-4 border shadow-sm space-y-3 w-full box-border">
               <div className="flex justify-between items-center">
                 <h3 className="font-bold text-sm text-gray-800">ジャンル別の食べた数</h3>
@@ -698,7 +682,7 @@ export default function RamenApp() {
         </div>
       )}
 
-{/* 完了モーダル */}
+      {/* 完了モーダル */}
       {isSuccessModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-40 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-sm rounded-2xl p-6 text-center space-y-4 shadow-xl box-border">
@@ -713,3 +697,7 @@ export default function RamenApp() {
           </div>
         </div>
       )}
+
+    </div>
+  );
+}
