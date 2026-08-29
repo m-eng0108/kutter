@@ -133,7 +133,7 @@ export default function RamenApp() {
     }
   };
 
-  // ラーメン追加処理（Supabaseへ保存）
+// ラーメン追加処理（Supabaseへ保存）
   const handleAddRamen = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!shopName || !ramenName) return;
@@ -155,11 +155,16 @@ export default function RamenApp() {
     };
 
     try {
-      const { error } = await supabase.from('ramens').insert([newDbData]);
+      console.log('保存データ送信中...', newDbData);
+      const { data, error } = await supabase.from('ramens').insert([newDbData]).select();
+      
       if (error) {
+        console.error('Supabase保存エラー詳細:', error);
         alert('保存に失敗しました: ' + error.message);
         return;
       }
+
+      console.log('保存成功！', data);
 
       // 成功したら一覧を再取得
       await fetchRamens();
@@ -175,8 +180,8 @@ export default function RamenApp() {
       setMemo('');
       setImagePreview(null);
     } catch (err) {
-      console.error(err);
-      alert('エラーが発生しました');
+      console.error('予期せぬエラー:', err);
+      alert('エラーが発生しました: ' + err);
     }
   };
 
