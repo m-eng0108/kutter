@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 import { 
   Search, Filter, Plus, ChevronRight, X, Star, CheckCircle2, 
   Image as ImageIcon, MapPin, Calendar, Trash2, Edit3, ChevronLeft, 
@@ -24,75 +25,9 @@ interface Ramen {
   images: string[];
 }
 
-const INITIAL_DATA: Ramen[] = [
-  {
-    id: '1',
-    shopName: 'らぁ麺 はやし田',
-    ramenName: '醤油らぁ麺',
-    rating: 4.5,
-    price: 1200,
-    genre: '醤油',
-    address: '東京都新宿区新宿3-31-3',
-    accessNote: '新宿駅東口から徒歩3分',
-    date: '2026/05/19',
-    visitCount: 3,
-    memo: 'スープは鶏の旨みと醤油のキレが絶妙で飲み干したくなる美味しさ！',
-    wantAgain: true,
-    images: [
-      'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=800&q=80',
-      'https://images.unsplash.com/photo-1591814468924-caf88d1232e1?w=800&q=80',
-    ],
-  },
-  {
-    id: '2',
-    shopName: '麺屋 一燈',
-    ramenName: '濃厚魚介らーめん',
-    rating: 4.0,
-    price: 1100,
-    genre: '豚骨',
-    address: '東京都葛飾区東新小岩1-4-17',
-    accessNote: '新小岩駅から徒歩3分',
-    date: '2026/05/18',
-    visitCount: 1,
-    memo: '濃厚な魚介スープが麺によく絡んで非常に美味しかったです。',
-    wantAgain: false,
-    images: [
-      'https://images.unsplash.com/photo-1591814468924-caf88d1232e1?w=800&q=80',
-    ],
-  },
-  {
-    id: '3',
-    shopName: 'ラーメン二郎',
-    ramenName: 'ひばりヶ丘駅前店',
-    rating: 4.5,
-    price: 900,
-    genre: 'その他',
-    address: '東京都西東京市ひばりヶ丘',
-    accessNote: 'ひばりヶ丘駅南口から徒歩5分',
-    date: '2026/05/17',
-    visitCount: 5,
-    memo: 'ボリューム満点で最高！',
-    wantAgain: true,
-    images: [
-      'https://images.unsplash.com/photo-1552611052-33e04de081de?w=800&q=80',
-    ],
-  },
-];
-
 export default function RamenApp() {
-  const [ramenList, setRamenList] = useState<Ramen[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('kutter_ramenList');
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {
-          console.error(e);
-        }
-      }
-    }
-    return INITIAL_DATA;
-  });
+  const [ramenList, setRamenList] = useState<Ramen[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [currentTab, setCurrentTab] = useState<'home' | 'list' | 'stats'>('home');
   const [selectedGenre, setSelectedGenre] = useState('すべて');
@@ -111,9 +46,45 @@ export default function RamenApp() {
   const [memo, setMemo] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
+  // Supabaseからデータを取得
+  const fetchRamens = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('ramens')
+        .select('*')
+        .order('date', { ascending: false });
+
+      if (error) {
+        console.error('データ取得エラー:', error);
+      } else if (data) {
+        // SupabaseのDBカラム名(スネークケース)をアプリの型(キャメルケース)に変換
+        const formatted: Ramen[] = data.map((item: any) => ({
+          id: item.id,
+          shopName: item.shop_name,
+          ramenName: item.ramen_name,
+          rating: Number(item.rating),
+          price: item.price,
+          genre: item.genre,
+          address: item.address,
+          accessNote: item.access_note,
+          date: item.date,
+          visitCount: item.visit_count,
+          memo: item.memo,
+          wantAgain: item.want_again,
+          images: item.images || [],
+        }));
+        setRamenList(formatted);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    localStorage.setItem('kutter_ramenList', JSON.stringify(ramenList));
-  }, [ramenList]);
+    fetchRamens();
+  }, []);
 
   const startDate = new Date('2026-09-01');
   const today = new Date();
@@ -162,53 +133,83 @@ export default function RamenApp() {
     }
   };
 
-  const handleAddRamen = (e: React.FormEvent) => {
+  // ラーメン追加処理（Supabaseへ保存）
+  const handleAddRamen = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!shopName || !ramenName) return;
 
-    const newRamen: Ramen = {
+    const newDbData = {
       id: Date.now().toString(),
-      shopName,
-      ramenName,
-      rating,
+      shop_name: shopName,
+      ramen_name: ramenName,
+      rating: rating,
       price: Number(price) || 0,
-      genre,
+      genre: genre,
       address: address || '東京都新宿区',
-      accessNote: '駅チカ',
+      access_note: '駅チカ',
       date: new Date().toLocaleDateString('ja-JP').replace(/\//g, '/'),
-      visitCount: 1,
+      visit_count: 1,
       memo: memo || '感想なし',
-      wantAgain: true,
+      want_again: true,
       images: [imagePreview || 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=800&q=80'],
     };
 
-    setRamenList([newRamen, ...ramenList]);
-    setIsModalOpen(false);
-    setIsSuccessModalOpen(true);
-    
-    setShopName('');
-    setRamenName('');
-    setPrice('');
-    setGenre('醤油');
-    setAddress('');
-    setRating(5);
-    setMemo('');
-    setImagePreview(null);
+    try {
+      const { error } = await supabase.from('ramens').insert([newDbData]);
+      if (error) {
+        alert('保存に失敗しました: ' + error.message);
+        return;
+      }
+
+      // 成功したら一覧を再取得
+      await fetchRamens();
+      setIsModalOpen(false);
+      setIsSuccessModalOpen(true);
+      
+      setShopName('');
+      setRamenName('');
+      setPrice('');
+      setGenre('醤油');
+      setAddress('');
+      setRating(5);
+      setMemo('');
+      setImagePreview(null);
+    } catch (err) {
+      console.error(err);
+      alert('エラーが発生しました');
+    }
   };
 
-  const handleDeleteRamen = (id: string) => {
+  // 削除処理（Supabaseから削除）
+  const handleDeleteRamen = async (id: string) => {
     if (confirm('この記録を削除しますか？')) {
+      const { error } = await supabase.from('ramens').delete().eq('id', id);
+      if (error) {
+        alert('削除に失敗しました');
+        return;
+      }
       setRamenList(ramenList.filter((item) => item.id !== id));
       setSelectedRamen(null);
     }
   };
 
-  const toggleWantAgain = () => {
+  const toggleWantAgain = async () => {
     if (!selectedRamen) return;
     const updated = { ...selectedRamen, wantAgain: !selectedRamen.wantAgain };
     setSelectedRamen(updated);
     setRamenList(ramenList.map(item => item.id === updated.id ? updated : item));
+
+    await supabase
+      .from('ramens')
+      .update({ want_again: updated.wantAgain })
+      .eq('id', updated.id);
   };
+
+  if (loading) {
+    <div className="flex items-center justify-center min-h-screen">
+      <p className="text-gray-500 font-bold">読み込み中...</p>
+    </div>
+  }
 
   return (
     <div className="w-full max-w-md mx-auto bg-gray-50 min-h-screen pb-24 relative font-sans text-gray-800 shadow-xl overflow-x-hidden box-border">
@@ -222,10 +223,6 @@ export default function RamenApp() {
             </button>
             <img src="/logo.png" alt="Kutter Logo" className="h-8 object-contain" />
             <div className="flex items-center gap-3 text-xs font-bold">
-              <button className="flex flex-col items-center text-blue-600">
-                <Edit3 className="w-4 h-4" />
-                <span>編集</span>
-              </button>
               <button onClick={() => handleDeleteRamen(selectedRamen.id)} className="flex flex-col items-center text-red-500">
                 <Trash2 className="w-4 h-4" />
                 <span>削除</span>
@@ -331,7 +328,9 @@ export default function RamenApp() {
           </div>
 
           <div className="px-4 space-y-3 w-full box-border">
-            {ramenList.map((ramen) => (
+            {ramenList
+              .filter(r => selectedGenre === 'すべて' || r.genre === selectedGenre)
+              .map((ramen) => (
               <div
                 key={ramen.id}
                 onClick={() => { setSelectedRamen(ramen); setActiveImageIndex(0); }}
@@ -399,11 +398,11 @@ export default function RamenApp() {
               
               <div className="space-y-2 pt-2">
                 {[
-                  { month: '5月 (今月)', count: ramenList.length, max: 25 },
-                  { month: '4月', count: 14, max: 25 },
-                  { month: '3月', count: 21, max: 25 },
-                  { month: '2月', count: 16, max: 25 },
-                  { month: '1月', count: 19, max: 25 },
+                  { month: '9月 (今月)', count: ramenList.length, max: 25 },
+                  { month: '8月', count: 14, max: 25 },
+                  { month: '7月', count: 21, max: 25 },
+                  { month: '6月', count: 16, max: 25 },
+                  { month: '5月', count: 19, max: 25 },
                 ].map((item, idx) => (
                   <div key={idx} className="space-y-1">
                     <div className="flex justify-between text-xs font-medium">
@@ -701,7 +700,7 @@ export default function RamenApp() {
             <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto animate-bounce" />
             <div className="space-y-1">
               <h3 className="text-lg font-bold text-gray-800">記録が完了しました！🍜</h3>
-              <p className="text-xs text-gray-500">新しいラーメンの記録が追加されました。</p>
+              <p className="text-xs text-gray-500">新しいラーメンの記録がクラウドに追加されました。</p>
             </div>
             <button onClick={() => setIsSuccessModalOpen(false)} className="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl shadow text-sm">
               OK
