@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
-  Search, Filter, Plus, ChevronRight, X, Star, CheckCircle2, 
+  Search, Filter, Plus, ChevronRight, ChevronLeft, X, Star, CheckCircle2, 
   Image as ImageIcon, MapPin, Calendar, Trash2, 
   Store, Utensils, JapaneseYen, MessageSquare, Heart, 
   Menu, Bell, Home, BarChart2, TrendingUp, Award
