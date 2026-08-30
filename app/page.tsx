@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
-  Search, Filter, Plus, ChevronRight, ChevronLeft, X, Star, CheckCircle2, 
+  Search, Filter, Plus, ChevronRight, ChevronLeft, X, Star, CheckCircle2, Pencil, 
   Image as ImageIcon, MapPin, Calendar, Trash2, 
   Store, Utensils, JapaneseYen, MessageSquare, Heart, 
   Menu, Bell, Home, BarChart2, TrendingUp, Award
@@ -32,6 +32,8 @@ export default function RamenApp() {
   const [currentTab, setCurrentTab] = useState<'home' | 'list' | 'stats'>('home');
   const [selectedGenre, setSelectedGenre] = useState('すべて');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [selectedRamen, setSelectedRamen] = useState<Ramen | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -127,53 +129,116 @@ export default function RamenApp() {
     }
   };
 
-  // ラーメン追加処理（Supabaseへ保存）
+  // 編集開始処理（フォームに既存データをセットしてモーダルを開く）
+  const handleStartEdit = (ramen: Ramen) => {
+    setIsEditMode(true);
+    setEditingId(ramen.id);
+    setShopName(ramen.shopName);
+    setRamenName(ramen.ramenName);
+    setPrice(ramen.price ? String(ramen.price) : '');
+    setGenre(ramen.genre);
+    setAddress(ramen.address);
+    setRating(ramen.rating);
+    setMemo(ramen.memo);
+    setImagePreview(ramen.images[0] || null);
+    setIsModalOpen(true);
+  };
+
+  // モーダルを閉じてフォームをリセット
+  const resetForm = () => {
+    setIsModalOpen(false);
+    setIsEditMode(false);
+    setEditingId(null);
+    setShopName('');
+    setRamenName('');
+    setPrice('');
+    setGenre('醤油');
+    setAddress('');
+    setRating(5);
+    setMemo('');
+    setImagePreview(null);
+  };
+
+  // ラーメン追加・編集処理（Supabaseへ保存）
   const handleAddRamen = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!shopName || !ramenName) return;
 
-    const d = new Date();
-    const formattedDate = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
-
-    const newDbData = {
-      id: Date.now().toString(),
-      shop_name: shopName,
-      ramen_name: ramenName,
-      rating: rating,
-      price: Number(price) || 0,
-      genre: genre,
-      address: address || '東京都新宿区',
-      access_note: '駅チカ',
-      date: formattedDate,
-      visit_count: 1,
-      memo: memo || '感想なし',
-      want_again: true,
-      images: [imagePreview || 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=800&q=80'],
-    };
-
     try {
-      console.log('保存データ送信中...', newDbData);
-      const { data, error } = await supabase.from('ramens').insert([newDbData]).select();
-      
-      if (error) {
-        console.error('Supabase保存エラー詳細:', error);
-        alert('保存に失敗しました: ' + error.message);
-        return;
+      if (isEditMode && editingId) {
+        // 編集（更新）処理
+        const updateData = {
+          shop_name: shopName,
+          ramen_name: ramenName,
+          rating: rating,
+          price: Number(price) || 0,
+          genre: genre,
+          address: address || '東京都新宿区',
+          memo: memo || '感想なし',
+          images: [imagePreview || 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=800&q=80'],
+        };
+
+        const { data, error } = await supabase
+          .from('ramens')
+          .update(updateData)
+          .eq('id', editingId)
+          .select();
+
+        if (error) {
+          console.error('Supabase更新エラー詳細:', error);
+          alert('更新に失敗しました: ' + error.message);
+          return;
+        }
+
+        console.log('更新成功！', data);
+
+        // 詳細ページを表示中だった場合は表示内容も更新
+        if (selectedRamen && selectedRamen.id === editingId) {
+          setSelectedRamen({ ...selectedRamen, ...{
+            shopName, ramenName, rating, price: Number(price) || 0, genre,
+            address: address || '東京都新宿区', memo: memo || '感想なし',
+            images: [imagePreview || 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=800&q=80'],
+          }});
+        }
+
+        resetForm();
+        await fetchRamens();
+      } else {
+        // 新規追加処理
+        const d = new Date();
+        const formattedDate = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+
+        const newDbData = {
+          id: Date.now().toString(),
+          shop_name: shopName,
+          ramen_name: ramenName,
+          rating: rating,
+          price: Number(price) || 0,
+          genre: genre,
+          address: address || '東京都新宿区',
+          access_note: '駅チカ',
+          date: formattedDate,
+          visit_count: 1,
+          memo: memo || '感想なし',
+          want_again: true,
+          images: [imagePreview || 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=800&q=80'],
+        };
+
+        console.log('保存データ送信中...', newDbData);
+        const { data, error } = await supabase.from('ramens').insert([newDbData]).select();
+
+        if (error) {
+          console.error('Supabase保存エラー詳細:', error);
+          alert('保存に失敗しました: ' + error.message);
+          return;
+        }
+
+        console.log('保存成功！', data);
+
+        setIsModalOpen(false);
+        setIsSuccessModalOpen(true);
+        resetForm();
       }
-
-      console.log('保存成功！', data);
-
-      setIsModalOpen(false);
-      setIsSuccessModalOpen(true);
-      
-      setShopName('');
-      setRamenName('');
-      setPrice('');
-      setGenre('醤油');
-      setAddress('');
-      setRating(5);
-      setMemo('');
-      setImagePreview(null);
     } catch (err) {
       console.error('予期せぬエラー:', err);
       alert('エラーが発生しました: ' + err);
@@ -216,7 +281,11 @@ export default function RamenApp() {
               <ChevronLeft className="w-6 h-6 text-gray-800" />
             </button>
             <img src="/logo.png" alt="Kutter Logo" className="h-8 object-contain" />
-            <div className="flex items-center gap-3 text-xs font-bold">
+            <div className="flex items-center gap-4 text-xs font-bold">
+              <button onClick={() => handleStartEdit(selectedRamen)} className="flex flex-col items-center text-blue-600">
+                <Pencil className="w-4 h-4" />
+                <span>編集</span>
+              </button>
               <button onClick={() => handleDeleteRamen(selectedRamen.id)} className="flex flex-col items-center text-red-500">
                 <Trash2 className="w-4 h-4" />
                 <span>削除</span>
@@ -502,7 +571,7 @@ export default function RamenApp() {
             </div>
 
             <button
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => { setIsEditMode(false); setEditingId(null); setIsModalOpen(true); }}
               className="w-full bg-[#007AFF] text-white py-4 rounded-2xl font-bold shadow-lg flex items-center justify-center gap-2 text-base active:scale-[0.98] transition-all box-border"
             >
               <div className="bg-white/20 p-1 rounded-full"><Plus className="w-5 h-5" /></div>
@@ -554,7 +623,7 @@ export default function RamenApp() {
                   <p className="text-xs font-black text-gray-900">{ramenList.filter(r => r.genre === '醤油').length}<span className="text-[9px]">杯</span></p>
                 </div>
                 <div>
-                  <div className="text-lg">🥣</div>
+                  <div className="text-lg">🍜</div>
                   <p className="text-[10px] font-bold text-gray-600 mt-1">塩</p>
                   <p className="text-xs font-black text-gray-900">{ramenList.filter(r => r.genre === '塩').length}<span className="text-[9px]">杯</span></p>
                 </div>
@@ -601,8 +670,8 @@ export default function RamenApp() {
         <div className="fixed inset-0 bg-black/50 z-30 flex items-end justify-center sm:items-center p-0 sm:p-4">
           <div className="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto box-border">
             <div className="flex justify-between items-center border-b pb-3">
-              <h2 className="text-lg font-bold text-gray-800">ラーメンを記録</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+              <h2 className="text-lg font-bold text-gray-800">{isEditMode ? 'ラーメンを編集' : 'ラーメンを記録'}</h2>
+              <button onClick={resetForm} className="text-gray-400 hover:text-gray-600">
                 <X className="w-6 h-6" />
               </button>
             </div>
@@ -675,7 +744,7 @@ export default function RamenApp() {
               </div>
 
               <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow hover:bg-blue-700 transition-colors mt-2">
-                保存する
+                {isEditMode ? '更新する' : '保存する'}
               </button>
             </form>
           </div>
