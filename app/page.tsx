@@ -462,10 +462,10 @@ export default function RamenApp() {
               <div className="space-y-2 pt-2">
                 {[
                   { month: '9月 (今月)', count: ramenList.length, max: 25 },
-                  { month: '8月', count: 14, max: 25 },
-                  { month: '7月', count: 21, max: 25 },
-                  { month: '6月', count: 16, max: 25 },
-                  { month: '5月', count: 19, max: 25 },
+                  { month: '8月', count: 4, max: 25 },
+                  { month: '7月', count: 1, max: 25 },
+                  { month: '6月', count: 3, max: 25 },
+                  { month: '5月', count: 6, max: 25 },
                 ].map((item, idx) => (
                   <div key={idx} className="space-y-1">
                     <div className="flex justify-between text-xs font-medium">
