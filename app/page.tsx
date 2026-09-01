@@ -492,7 +492,7 @@ export default function RamenApp() {
                   { name: '醤油', count: ramenList.filter(r => r.genre === '醤油').length, color: 'bg-blue-500' },
                   { name: '塩', count: ramenList.filter(r => r.genre === '塩').length, color: 'bg-teal-500' },
                   { name: '豚骨', count: ramenList.filter(r => r.genre === '豚骨').length, color: 'bg-amber-500' },
-                  { name: '味噌', count: ramenList.filter(r => r.genre === '味噌').length, color: 'bg-orange-500' },
+                  { name: '二郎系', count: ramenList.filter(r => r.genre === '二郎系').length, color: 'bg-orange-500' },
                   { name: 'その他', count: ramenList.filter(r => r.genre === 'その他').length, color: 'bg-purple-500' },
                 ].map((g, i) => (
                   <div key={i} className="flex items-center justify-between border-b pb-2 last:border-none last:pb-0">
@@ -629,8 +629,8 @@ export default function RamenApp() {
                 </div>
                 <div>
                   <div className="text-lg">🍜</div>
-                  <p className="text-[10px] font-bold text-gray-600 mt-1">味噌</p>
-                  <p className="text-xs font-black text-gray-900">{ramenList.filter(r => r.genre === '味噌').length}<span className="text-[9px]">杯</span></p>
+                  <p className="text-[10px] font-bold text-gray-600 mt-1">二郎系</p>
+                  <p className="text-xs font-black text-gray-900">{ramenList.filter(r => r.genre === '二郎系').length}<span className="text-[9px]">杯</span></p>
                 </div>
                 <div>
                   <div className="text-lg">🍜</div>
