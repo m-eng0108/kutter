@@ -87,7 +87,7 @@ export default function RamenApp() {
     fetchRamens();
   }, []);
 
-  const genres = ['すべて', '醤油', '塩', '味噌', '豚骨', 'その他'];
+  const genres = ['すべて', '醤油', '塩', '二郎系', '豚骨', 'その他'];
 
   // 画像自動圧縮・リサイズ処理
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
