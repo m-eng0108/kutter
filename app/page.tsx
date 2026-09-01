@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
   Search, Filter, Plus, ChevronRight, ChevronLeft, X, Star, CheckCircle2, Pencil, 
@@ -88,6 +88,67 @@ export default function RamenApp() {
   }, []);
 
   const genres = ['すべて', '醤油', '塩', '二郎系', '豚骨', 'その他'];
+
+  // "YYYY/M/D" 形式の文字列をDateに変換
+  const parseRamenDate = (dateStr: string): Date | null => {
+    const parts = dateStr.split('/').map(Number);
+    if (parts.length !== 3 || parts.some(isNaN)) return null;
+    const [y, m, d] = parts;
+    return new Date(y, m - 1, d);
+  };
+
+  // 記録をはじめてからの日数（最も古い記録日を起点に計算）
+  const daysSinceStart = useMemo(() => {
+    const dates = ramenList.map(r => parseRamenDate(r.date)).filter((d): d is Date => d !== null);
+    if (dates.length === 0) return 0;
+    const firstDate = new Date(Math.min(...dates.map(d => d.getTime())));
+    const today = new Date();
+    const firstDay = new Date(firstDate.getFullYear(), firstDate.getMonth(), firstDate.getDate());
+    const todayDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const diffDays = Math.round((todayDay.getTime() - firstDay.getTime()) / 86400000);
+    return diffDays + 1;
+  }, [ramenList]);
+
+  // 今月・先月のラーメン数（記録日ベースで自動判定）
+  const { thisMonthCount, lastMonthCount } = useMemo(() => {
+    const now = new Date();
+    const thisY = now.getFullYear();
+    const thisM = now.getMonth();
+    const lastMonthDate = new Date(thisY, thisM - 1, 1);
+    const lastY = lastMonthDate.getFullYear();
+    const lastM = lastMonthDate.getMonth();
+
+    let thisCount = 0;
+    let lastCount = 0;
+    ramenList.forEach(r => {
+      const d = parseRamenDate(r.date);
+      if (!d) return;
+      if (d.getFullYear() === thisY && d.getMonth() === thisM) thisCount++;
+      if (d.getFullYear() === lastY && d.getMonth() === lastM) lastCount++;
+    });
+    return { thisMonthCount: thisCount, lastMonthCount: lastCount };
+  }, [ramenList]);
+
+  // 直近5ヶ月分の月別ラーメン摂取量（当月を含めて自動で月がスライドする）
+  const monthlyStats = useMemo(() => {
+    const now = new Date();
+    const months: { month: string; count: number; max: number }[] = [];
+    for (let i = 0; i < 5; i++) {
+      const target = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const y = target.getFullYear();
+      const m = target.getMonth();
+      const count = ramenList.filter(r => {
+        const d = parseRamenDate(r.date);
+        return d && d.getFullYear() === y && d.getMonth() === m;
+      }).length;
+      months.push({
+        month: `${m + 1}月${i === 0 ? ' (今月)' : ''}`,
+        count,
+        max: 25,
+      });
+    }
+    return months;
+  }, [ramenList]);
 
   // 画像自動圧縮・リサイズ処理
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -456,17 +517,11 @@ export default function RamenApp() {
                 <h3 className="font-bold text-sm text-gray-800 flex items-center gap-1.5">
                   <BarChart2 className="w-4 h-4 text-blue-600" /> 月別ラーメン摂取量
                 </h3>
-                <span className="text-[10px] text-gray-400 font-bold">2026年</span>
+                <span className="text-[10px] text-gray-400 font-bold">{new Date().getFullYear()}年</span>
               </div>
               
               <div className="space-y-2 pt-2">
-                {[
-                  { month: '9月 (今月)', count: ramenList.length, max: 25 },
-                  { month: '8月', count: 4, max: 25 },
-                  { month: '7月', count: 1, max: 25 },
-                  { month: '6月', count: 3, max: 25 },
-                  { month: '5月', count: 6, max: 25 },
-                ].map((item, idx) => (
+                {monthlyStats.map((item, idx) => (
                   <div key={idx} className="space-y-1">
                     <div className="flex justify-between text-xs font-medium">
                       <span className="text-gray-600">{item.month}</span>
@@ -533,7 +588,7 @@ export default function RamenApp() {
                     <span className="text-2xl font-black text-gray-900">{ramenList.length}</span>
                     <span className="text-xs text-gray-600">杯</span>
                   </div>
-                  <p className="text-[10px] text-blue-500 font-medium mt-0.5">記録をはじめて 1日</p>
+                  <p className="text-[10px] text-blue-500 font-medium mt-0.5">記録をはじめて {daysSinceStart}日</p>
                 </div>
               </div>
               <div className="h-10 w-[1px] bg-gray-100 flex-shrink-0" />
@@ -544,10 +599,10 @@ export default function RamenApp() {
                 <div className="text-right">
                   <p className="text-[11px] text-gray-400 font-bold">今月のラーメン数</p>
                   <div className="flex items-baseline justify-end gap-1">
-                    <span className="text-2xl font-black text-gray-900">{ramenList.length}</span>
+                    <span className="text-2xl font-black text-gray-900">{thisMonthCount}</span>
                     <span className="text-xs text-gray-600">杯</span>
                   </div>
-                  <p className="text-[10px] text-gray-400 mt-0.5">先月: 14杯</p>
+                  <p className="text-[10px] text-gray-400 mt-0.5">先月: {lastMonthCount}杯</p>
                 </div>
               </div>
             </div>
