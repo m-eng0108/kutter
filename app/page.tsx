@@ -136,6 +136,15 @@ export default function RamenApp() {
     return { thisMonthCount: thisCount, lastMonthCount: lastCount };
   }, [ramenList]);
 
+  // 今月分の記録だけを抽出（ホーム画面のジャンル別集計などに使用）
+  const thisMonthRamenList = useMemo(() => {
+    const now = new Date();
+    return ramenList.filter(r => {
+      const d = parseRamenDate(r.date);
+      return d && d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    });
+  }, [ramenList]);
+
   // 直近5ヶ月分の月別ラーメン摂取量（当月を含めて自動で月がスライドする）
   const monthlyStats = useMemo(() => {
     const now = new Date();
@@ -679,7 +688,7 @@ export default function RamenApp() {
 
             <div className="bg-white rounded-2xl p-4 border shadow-sm space-y-3 w-full box-border">
               <div className="flex justify-between items-center">
-                <h3 className="font-bold text-sm text-gray-800">ジャンル別の食べた数</h3>
+                <h3 className="font-bold text-sm text-gray-800">ジャンル別の食べた数（今月）</h3>
                 <span onClick={() => setCurrentTab('stats')} className="text-xs text-blue-600 font-bold flex items-center cursor-pointer">
                   すべて見る <ChevronRight className="w-4 h-4" />
                 </span>
@@ -688,27 +697,27 @@ export default function RamenApp() {
                 <div>
                   <div className="text-lg">🍜</div>
                   <p className="text-[10px] font-bold text-gray-600 mt-1">醤油</p>
-                  <p className="text-xs font-black text-gray-900">{ramenList.filter(r => r.genre === '醤油').length}<span className="text-[9px]">杯</span></p>
+                  <p className="text-xs font-black text-gray-900">{thisMonthRamenList.filter(r => r.genre === '醤油').length}<span className="text-[9px]">杯</span></p>
                 </div>
                 <div>
                   <div className="text-lg">🍜</div>
                   <p className="text-[10px] font-bold text-gray-600 mt-1">塩</p>
-                  <p className="text-xs font-black text-gray-900">{ramenList.filter(r => r.genre === '塩').length}<span className="text-[9px]">杯</span></p>
+                  <p className="text-xs font-black text-gray-900">{thisMonthRamenList.filter(r => r.genre === '塩').length}<span className="text-[9px]">杯</span></p>
                 </div>
                 <div>
                   <div className="text-lg">🍜</div>
                   <p className="text-[10px] font-bold text-gray-600 mt-1">二郎系</p>
-                  <p className="text-xs font-black text-gray-900">{ramenList.filter(r => r.genre === '二郎系').length}<span className="text-[9px]">杯</span></p>
+                  <p className="text-xs font-black text-gray-900">{thisMonthRamenList.filter(r => r.genre === '二郎系').length}<span className="text-[9px]">杯</span></p>
                 </div>
                 <div>
                   <div className="text-lg">🍜</div>
                   <p className="text-[10px] font-bold text-gray-600 mt-1">豚骨</p>
-                  <p className="text-xs font-black text-gray-900">{ramenList.filter(r => r.genre === '豚骨').length}<span className="text-[9px]">杯</span></p>
+                  <p className="text-xs font-black text-gray-900">{thisMonthRamenList.filter(r => r.genre === '豚骨').length}<span className="text-[9px]">杯</span></p>
                 </div>
                 <div>
                   <div className="text-lg">•••</div>
                   <p className="text-[10px] font-bold text-gray-600 mt-1">その他</p>
-                  <p className="text-xs font-black text-gray-900">{ramenList.filter(r => r.genre === 'その他').length}<span className="text-[9px]">杯</span></p>
+                  <p className="text-xs font-black text-gray-900">{thisMonthRamenList.filter(r => r.genre === 'その他').length}<span className="text-[9px]">杯</span></p>
                 </div>
               </div>
             </div>
