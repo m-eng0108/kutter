@@ -89,6 +89,13 @@ export default function RamenApp() {
 
   const genres = ['すべて', '醤油', '塩', '二郎系', '豚骨', 'その他'];
 
+  // 住所（＋店名）をGoogle Mapsアプリ／ブラウザで開く
+  const openInMaps = (address: string, shopName?: string) => {
+    const query = shopName ? `${shopName} ${address}` : address;
+    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+    window.open(url, '_blank');
+  };
+
   // "YYYY/M/D" 形式の文字列をDateに変換
   const parseRamenDate = (dateStr: string): Date | null => {
     const parts = dateStr.split('/').map(Number);
@@ -398,8 +405,14 @@ export default function RamenApp() {
               </div>
               <div className="flex items-start">
                 <span className="w-24 text-gray-400 font-bold flex items-center gap-1.5 pt-0.5"><MapPin className="w-4 h-4 text-blue-500" /> 所在地</span>
-                <div className="flex-1 font-medium text-gray-800">
+                <div className="flex-1 font-medium text-gray-800 flex items-center justify-between gap-2">
                   <p>{selectedRamen.address}</p>
+                  <button
+                    onClick={() => openInMaps(selectedRamen.address, selectedRamen.shopName)}
+                    className="flex-shrink-0 bg-blue-50 text-blue-600 text-[11px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 active:bg-blue-100"
+                  >
+                    <MapPin className="w-3 h-3" /> 地図で見る
+                  </button>
                 </div>
               </div>
               <div className="flex items-start">
