@@ -1,0 +1,20 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    # 毎週月曜日と木曜日の 9:00 (JST) に実行
+    # cron は UTC 基準のため、JST-9:00 は UTC 0:00
+    - cron: '0 0 * * 1,4'
+  workflow_dispatch: {}
+    # ↑ Actionsタブから手動実行もできるようにするための設定
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        run: |
+          curl -s -o /dev/null -w "HTTPステータス: %{http_code}\n" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/ramens?select=id&limit=1" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
