@@ -46,6 +46,7 @@ export default function RamenApp() {
   const [address, setAddress] = useState('');
   const [rating, setRating] = useState(5);
   const [memo, setMemo] = useState('');
+  const [visitDate, setVisitDate] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   // Supabaseからデータを取得
@@ -206,6 +207,21 @@ export default function RamenApp() {
     }
   };
 
+  // "YYYY/M/D" → "YYYY-MM-DD"（<input type="date">用）
+  const toInputDateFormat = (dateStr: string): string => {
+    const d = parseRamenDate(dateStr);
+    if (!d) return '';
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${d.getFullYear()}-${mm}-${dd}`;
+  };
+
+  // "YYYY-MM-DD" → "YYYY/M/D"（保存用フォーマット）
+  const toStorageDateFormat = (isoDateStr: string): string => {
+    const [y, m, d] = isoDateStr.split('-').map(Number);
+    return `${y}/${m}/${d}`;
+  };
+
   // 編集開始処理（フォームに既存データをセットしてモーダルを開く）
   const handleStartEdit = (ramen: Ramen) => {
     setIsEditMode(true);
@@ -218,6 +234,7 @@ export default function RamenApp() {
     setRating(ramen.rating);
     setMemo(ramen.memo);
     setImagePreview(ramen.images[0] || null);
+    setVisitDate(toInputDateFormat(ramen.date));
     setIsModalOpen(true);
   };
 
@@ -234,6 +251,7 @@ export default function RamenApp() {
     setRating(5);
     setMemo('');
     setImagePreview(null);
+    setVisitDate('');
   };
 
   // ラーメン追加・編集処理（Supabaseへ保存）
@@ -242,6 +260,11 @@ export default function RamenApp() {
     if (!shopName || !ramenName) return;
 
     try {
+      const formattedDate = visitDate ? toStorageDateFormat(visitDate) : (() => {
+        const d = new Date();
+        return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+      })();
+
       if (isEditMode && editingId) {
         // 編集（更新）処理
         const updateData = {
@@ -252,6 +275,7 @@ export default function RamenApp() {
           genre: genre,
           address: address || '東京都新宿区',
           memo: memo || '感想なし',
+          date: formattedDate,
           images: [imagePreview || 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=800&q=80'],
         };
 
@@ -273,7 +297,7 @@ export default function RamenApp() {
         if (selectedRamen && selectedRamen.id === editingId) {
           setSelectedRamen({ ...selectedRamen, ...{
             shopName, ramenName, rating, price: Number(price) || 0, genre,
-            address: address || '東京都新宿区', memo: memo || '感想なし',
+            address: address || '東京都新宿区', memo: memo || '感想なし', date: formattedDate,
             images: [imagePreview || 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=800&q=80'],
           }});
         }
@@ -282,9 +306,6 @@ export default function RamenApp() {
         await fetchRamens();
       } else {
         // 新規追加処理
-        const d = new Date();
-        const formattedDate = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
-
         const newDbData = {
           id: Date.now().toString(),
           shop_name: shopName,
@@ -648,7 +669,15 @@ export default function RamenApp() {
             </div>
 
             <button
-              onClick={() => { setIsEditMode(false); setEditingId(null); setIsModalOpen(true); }}
+              onClick={() => {
+                setIsEditMode(false);
+                setEditingId(null);
+                const today = new Date();
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const dd = String(today.getDate()).padStart(2, '0');
+                setVisitDate(`${today.getFullYear()}-${mm}-${dd}`);
+                setIsModalOpen(true);
+              }}
               className="w-full bg-[#007AFF] text-white py-4 rounded-2xl font-bold shadow-lg flex items-center justify-center gap-2 text-base active:scale-[0.98] transition-all box-border"
             >
               <div className="bg-white/20 p-1 rounded-full"><Plus className="w-5 h-5" /></div>
@@ -797,6 +826,13 @@ export default function RamenApp() {
                     ))}
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-blue-500" /> 食べた日
+                </label>
+                <input type="date" value={visitDate} onChange={(e) => setVisitDate(e.target.value)} className="w-full p-2.5 border rounded-lg text-sm outline-none box-border" />
               </div>
 
               <div>
